@@ -1,0 +1,15 @@
+appId: host.exp.exponent
+---
+- launchApp
+- openLink: exp://10.0.2.2:8081
+- extendedWaitUntil:
+    visible: "Entrar na Bancada"
+    timeout: 60000
+- tapOn: "Solicite acesso"
+- assertVisible: "Criar Conta"
+- tapOn: "Ler política de privacidade"
+- assertVisible: "Política de privacidade — Abaulytics"
+- tapOn: "Voltar"
+- assertVisible: "Criar Conta"
+- tapOn: "Voltar ao login"
+- assertVisible: "Entrar na Bancada"

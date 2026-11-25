@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test:security": "node --test tests/security.test.cjs",
     "test:api": "python -m unittest discover -s api -v",
+    "test:e2e:mobile": "maestro test .maestro/auth-navigation.yaml",
     "check:release": "node scripts/check-release.cjs",
     "postinstall": "patch-package"
   },

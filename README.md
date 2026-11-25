@@ -190,8 +190,9 @@ Não use credenciais ou bancos reais de produção na simulação.
 | [`api/test_main.py`](api/test_main.py) | 23 | Cálculo de flecha, classificação, imagens sintéticas e inválidas, limites e erros da API. |
 | [`api/test_industrial.py`](api/test_industrial.py) | 9 | Calibração estéreo, amostragem, persistência, idempotência, OP, permissões, consultas e integração. |
 | [`tests/security.test.cjs`](tests/security.test.cjs) | 19 subtestes | Credenciais, autenticação, sessões, privacidade, auditoria e controles de acesso. |
+| [`.maestro/auth-navigation.yaml`](.maestro/auth-navigation.yaml) | 1 fluxo | Navegação móvel entre login, cadastro e política de privacidade. |
 
-Foram identificados **51 casos individuais no código analisado**, além do ensaio HTTP e verificações estáticas. Essa contagem **não significa que os 51 tenham sido executados e aprovados na versão mais recente**.
+Foram identificados **51 casos individuais de API e segurança** no código analisado, além do fluxo E2E móvel, do ensaio HTTP e de verificações estáticas. Essa contagem **não significa que os testes tenham sido executados e aprovados na versão mais recente**.
 
 Para executar os testes:
 
@@ -201,6 +202,22 @@ npm run test:security
 npm run test:api
 python -m api.validate_bench
 ```
+
+### Smoke test E2E móvel
+
+Com o Android Emulator aberto, o Expo Go instalado e o [Maestro CLI](https://maestro.mobile.dev/getting-started/installing-maestro) disponível no `PATH`, inicie o bundler em um terminal:
+
+```bash
+npx expo start --localhost
+```
+
+Em outro terminal, execute o fluxo de navegação de login, cadastro e política de privacidade:
+
+```bash
+npm run test:e2e:mobile
+```
+
+O fluxo usa o Expo Go no Android Emulator (`10.0.2.2`) e não cria uma conta nem envia dados.
 
 Validação adicional de configuração de distribuição:
 
