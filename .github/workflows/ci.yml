@@ -18,6 +18,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run test:security
+      # TODO: Configurar um emulador Android e o Maestro, depois executar npm run test:e2e:mobile aqui.
 
   api:
     name: API Python

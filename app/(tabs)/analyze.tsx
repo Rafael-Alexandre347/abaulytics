@@ -198,6 +198,7 @@ export default function AnalisarCaixaScreen() {
         </View>
 
         <View className="flex-1 justify-center items-center px-6">
+          {/* TODO: Detectar pouca iluminação, desfoque e enquadramento incompleto no dispositivo; definir limites com fotos reais. */}
           <Text className="text-slate-300 text-center text-sm mb-3">
             {previewUri
               ? 'Confira antes de enviar: iluminação suficiente, borda nítida e chapa inteira centralizada.'

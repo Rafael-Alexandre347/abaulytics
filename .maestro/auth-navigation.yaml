@@ -13,3 +13,4 @@ appId: host.exp.exponent
 - assertVisible: "Criar Conta"
 - tapOn: "Voltar ao login"
 - assertVisible: "Entrar na Bancada"
+# TODO: Adicionar teste determinístico da câmera para refazer e aprovar, verificando que o envio só começa após a aprovação.
