@@ -2,8 +2,8 @@ import { hasConsent, setConsent, requireConsent, recordOwnAction } from '../../s
 import { AnalysisConsentDialog } from '../../src/components/AnalysisConsentDialog';
 import { removeCapture, adoptTemporaryFile } from '../../src/privacy/files';
 import { analysisUrl } from '../../src/privacy/api';
-import React, { useRef, useState } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator, Modal, TextInput, Alert } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, TouchableOpacity, ActivityIndicator, Modal, TextInput, Alert, Image } from "react-native";
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { File } from 'expo-file-system';
 import { fetch } from 'expo/fetch';
@@ -11,6 +11,14 @@ import { salvarNoBanco } from "../../src/database/analysesRepository";
 import { Camera, CheckCircle2, RefreshCcw, Hash, TriangleAlert } from "lucide-react-native";
 import { useIsFocused, useRouter } from "expo-router";
 import { formatMeasurementMm, getAnalysisDetails, measurementPresentation } from "../../src/utils/analyze";
+
+function measurementWidth(value: string) {
+  const width = Number(value.replace(",", "."));
+  if (!Number.isFinite(width) || width <= 0 || width > 100000) {
+    throw new Error("Informe a largura nominal da chapa em milímetros, com um valor positivo de até 100000.");
+  }
+  return width;
+}
 
 export default function AnalisarCaixaScreen() {
   const router = useRouter();
@@ -22,8 +30,15 @@ export default function AnalisarCaixaScreen() {
   const [consentRequested, setConsentRequested] = useState(false);
   const [resultado, setResultado] = useState<string | null>(null);
   const [larguraNominalMm, setLarguraNominalMm] = useState('');
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
 
   const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (isFocused || isCapturing || !previewUri) return;
+    setPreviewUri(null);
+    void removeCapture(previewUri).catch(error => console.error('Não foi possível remover a prévia da captura:', error));
+  }, [isCapturing, isFocused, previewUri]);
 
   if (!permission) {
     return <View style={{ flex: 1, backgroundColor: '#0f172a' }} />;
@@ -55,10 +70,7 @@ export default function AnalisarCaixaScreen() {
     try {
       if (!await hasConsent()) { setConsentRequested(true); return; }
       await requireConsent();
-      const width = Number(larguraNominalMm.replace(",", "."));
-      if (!Number.isFinite(width) || width <= 0 || width > 100000) {
-        throw new Error("Informe a largura nominal da chapa em milímetros, com um valor positivo de até 100000.");
-      }
+      measurementWidth(larguraNominalMm);
       analysisUrl();
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.7,
@@ -66,15 +78,49 @@ export default function AnalisarCaixaScreen() {
       });
       if (__DEV__) console.info('[performance] captura', { ms: Math.round(performance.now() - captureStarted), width: photo.width, height: photo.height });
 
-      let uri = photo.uri;
-      try { uri = await adoptTemporaryFile(uri, 'jpg'); await uploadImage(uri, width); }
-      finally { await removeCapture(uri); }
+      const uri = await adoptTemporaryFile(photo.uri, 'jpg');
+      setPreviewUri(uri);
       
     } catch (error) {
-      Alert.alert("Análise não concluída", error instanceof Error ? error.message : "Não foi possível capturar ou processar a imagem.", [
+      Alert.alert("Captura não concluída", error instanceof Error ? error.message : "Não foi possível capturar a imagem.", [
         { text: "OK" }, { text: 'Privacidade', onPress: () => router.push('/(tabs)/privacy') },
       ]);
     } finally { captureBusy.current = false; setIsCapturing(false); }
+  };
+
+  const handleRetake = async () => {
+    if (!previewUri || isCapturing) return;
+    try {
+      await removeCapture(previewUri);
+      setPreviewUri(null);
+    } catch (error) {
+      Alert.alert('Prévia não removida', error instanceof Error ? error.message : 'Não foi possível remover a captura temporária.');
+    }
+  };
+
+  const handleAnalyzePreview = async () => {
+    if (!previewUri || captureBusy.current) return;
+
+    captureBusy.current = true;
+    setIsCapturing(true);
+    setProcessingStage('Enviando e analisando...');
+    try {
+      const width = measurementWidth(larguraNominalMm);
+      await uploadImage(previewUri, width);
+      setPreviewUri(null);
+      try {
+        await removeCapture(previewUri);
+      } catch (error) {
+        Alert.alert('Limpeza da captura', error instanceof Error ? error.message : 'Não foi possível remover o arquivo temporário.');
+      }
+    } catch (error) {
+      Alert.alert("Análise não concluída", error instanceof Error ? error.message : "Não foi possível processar a imagem.", [
+        { text: "OK" }, { text: 'Privacidade', onPress: () => router.push('/(tabs)/privacy') },
+      ]);
+    } finally {
+      captureBusy.current = false;
+      setIsCapturing(false);
+    }
   };
 
   const uploadImage = async (photoUri: string, width: number) => {
@@ -153,10 +199,19 @@ export default function AnalisarCaixaScreen() {
 
         <View className="flex-1 justify-center items-center px-6">
           <Text className="text-slate-300 text-center text-sm mb-3">
-            Centralize a chapa inteira com margem e fundo contrastante. Na foto de frente, deixe a borda a medir no topo.
+            {previewUri
+              ? 'Confira antes de enviar: iluminação suficiente, borda nítida e chapa inteira centralizada.'
+              : 'Centralize a chapa inteira com margem e fundo contrastante. Na foto de frente, deixe a borda a medir no topo.'}
           </Text>
           <View className="w-full flex-1 max-h-80 border-2 border-slate-500 rounded-3xl overflow-hidden relative bg-slate-800">
-            {isFocused && (
+            {previewUri ? (
+              <Image
+                source={{ uri: previewUri }}
+                resizeMode="contain"
+                accessibilityLabel="Prévia da chapa capturada para conferir iluminação, foco e enquadramento"
+                style={{ flex: 1 }}
+              />
+            ) : isFocused && (
               <CameraView 
                 ref={cameraRef}
                 style={{ flex: 1 }} 
@@ -164,23 +219,48 @@ export default function AnalisarCaixaScreen() {
               />
             )}
 
-            <View pointerEvents="none" className="absolute inset-0 justify-center px-[8%]">
+            {!previewUri && <View pointerEvents="none" className="absolute inset-0 justify-center px-[8%]">
               <View className="h-[84%] rounded-lg border-2 border-dashed border-white/80" />
-            </View>
+            </View>}
           </View>
 
-          <TouchableOpacity
-            accessibilityRole="button"
-            activeOpacity={0.7}
-            onPress={handleCapture}
-            disabled={isCapturing}
-            className="mt-4 flex-row items-center gap-2 px-5 py-3 rounded-full bg-orange-600"
-          >
-            {isCapturing ? <ActivityIndicator color="white" /> : <Camera size={20} color="white" />}
-            <Text className="text-white font-semibold" accessibilityLiveRegion="polite">
-              {isCapturing ? processingStage : "Capturar foto"}
-            </Text>
-          </TouchableOpacity>
+          {previewUri ? (
+            <View className="mt-4 w-full flex-row justify-center gap-3">
+              <TouchableOpacity
+                accessibilityRole="button"
+                onPress={handleRetake}
+                disabled={isCapturing}
+                className="flex-row items-center justify-center px-5 py-3 rounded-full bg-slate-700"
+              >
+                <RefreshCcw size={18} color="white" />
+                <Text className="text-white font-semibold ml-2">Refazer</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="button"
+                onPress={handleAnalyzePreview}
+                disabled={isCapturing}
+                className="flex-row items-center justify-center px-5 py-3 rounded-full bg-orange-600"
+              >
+                {isCapturing ? <ActivityIndicator color="white" /> : <CheckCircle2 size={18} color="white" />}
+                <Text className="text-white font-semibold ml-2" accessibilityLiveRegion="polite">
+                  {isCapturing ? processingStage : "Usar esta foto"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              accessibilityRole="button"
+              activeOpacity={0.7}
+              onPress={handleCapture}
+              disabled={isCapturing}
+              className="mt-4 flex-row items-center gap-2 px-5 py-3 rounded-full bg-orange-600"
+            >
+              {isCapturing ? <ActivityIndicator color="white" /> : <Camera size={20} color="white" />}
+              <Text className="text-white font-semibold" accessibilityLiveRegion="polite">
+                {isCapturing ? processingStage : "Capturar foto"}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
         <View className="h-20" />
       </View>

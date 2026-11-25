@@ -158,7 +158,7 @@ Scripts adicionais: `npm run android`, `npm run ios` e `npm run web`, conforme s
 1. Abra o app, crie uma conta e aceite a política e o consentimento necessários.
 2. Entre na **Bancada** com e-mail e senha.
 3. Inicie uma análise e informe a largura real da chapa em milímetros.
-4. Autorize a câmera, enquadre a borda da chapa e capture a imagem.
+4. Autorize a câmera, enquadre a borda da chapa e capture a imagem. Confira manualmente iluminação, nitidez e enquadramento; refaça a foto ou toque em **Usar esta foto**.
 5. Aguarde a medida e a classificação; consulte as análises no **Histórico** e exporte PDF por período.
 
 Se houver falha de conexão, verifique o IP no `.env`, o Uvicorn, a porta 8000 e o firewall.
