@@ -1,16 +1,34 @@
-appId: host.exp.exponent
+appId: com.abaulytics
 ---
 - launchApp
-- openLink: exp://10.0.2.2:8081
-- extendedWaitUntil:
-    visible: "Entrar na Bancada"
-    timeout: 60000
 - tapOn: "Solicite acesso"
 - assertVisible: "Criar Conta"
 - tapOn: "Ler política de privacidade"
 - assertVisible: "Política de privacidade — Abaulytics"
 - tapOn: "Voltar"
 - assertVisible: "Criar Conta"
-- tapOn: "Voltar ao login"
-- assertVisible: "Entrar na Bancada"
-# TODO: Adicionar teste determinístico da câmera para refazer e aprovar, verificando que o envio só começa após a aprovação.
+- tapOn:
+    text: "Seu nome"
+- inputText:
+    text: "E2E Usuario"
+- tapOn:
+    text: "nome@empresa.com"
+- inputText:
+    text: "e2e@abaulytics.test"
+- tapOn:
+    text: "••••••••"
+- inputText:
+    text: "TesteE2E123"
+- tapOn:
+    text: "Li e aceito a política"
+- tapOn: "Criar Conta"
+- assertVisible: "Medição de bancada"
+- tapOn: "Capturar foto"
+- tapOn:
+    text: "Permitir"
+    optional: true
+- assertVisible: "Refazer"
+- assertVisible: "Usar esta foto"
+- assertNotVisible: "Abaulamento estimado"
+- tapOn: "Refazer"
+- assertVisible: "Capturar foto"

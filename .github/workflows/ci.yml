@@ -18,7 +18,28 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run test:security
-      # TODO: Configurar um emulador Android e o Maestro, depois executar npm run test:e2e:mobile aqui.
+      - name: Preparar Android nativo
+        run: npx expo prebuild --platform android --no-install
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Configurar emulador e executar Maestro
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          script: |
+            cd android
+            ./gradlew assembleDebug
+            cd ..
+            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+            adb shell pm grant com.abaulytics android.permission.CAMERA
+            curl -Ls https://get.maestro.mobile.dev | bash
+            export PATH="$PATH:$HOME/.maestro/bin"
+            npm run test:e2e:mobile
 
   api:
     name: API Python

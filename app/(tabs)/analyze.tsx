@@ -11,6 +11,7 @@ import { salvarNoBanco } from "../../src/database/analysesRepository";
 import { Camera, CheckCircle2, RefreshCcw, Hash, TriangleAlert } from "lucide-react-native";
 import { useIsFocused, useRouter } from "expo-router";
 import { formatMeasurementMm, getAnalysisDetails, measurementPresentation } from "../../src/utils/analyze";
+import { validateCapturePhoto } from "../../src/utils/capture";
 
 function measurementWidth(value: string) {
   const width = Number(value.replace(",", "."));
@@ -76,6 +77,7 @@ export default function AnalisarCaixaScreen() {
         quality: 0.7,
         base64: false,
       });
+      validateCapturePhoto(photo.width, photo.height);
       if (__DEV__) console.info('[performance] captura', { ms: Math.round(performance.now() - captureStarted), width: photo.width, height: photo.height });
 
       const uri = await adoptTemporaryFile(photo.uri, 'jpg');
@@ -198,7 +200,6 @@ export default function AnalisarCaixaScreen() {
         </View>
 
         <View className="flex-1 justify-center items-center px-6">
-          {/* TODO: Detectar pouca iluminação, desfoque e enquadramento incompleto no dispositivo; definir limites com fotos reais. */}
           <Text className="text-slate-300 text-center text-sm mb-3">
             {previewUri
               ? 'Confira antes de enviar: iluminação suficiente, borda nítida e chapa inteira centralizada.'

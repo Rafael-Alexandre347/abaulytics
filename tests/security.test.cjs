@@ -59,6 +59,13 @@ function load(relative) {
   return mod.exports;
 }
 
+test('capture resolution rejects images below the mobile 480p floor', () => {
+  const capture = load('src/utils/capture.ts');
+  assert.doesNotThrow(() => capture.validateCapturePhoto(854, 480));
+  assert.throws(() => capture.validateCapturePhoto(640, 360), /resolução mínima/);
+  assert.throws(() => capture.validateCapturePhoto(0, 480), /validar a resolução/);
+});
+
 test('local security and privacy integration on real SQLite', async t => {
   await t.test('device credentials are fast from first use and fail closed without their key', async () => {
     const password = load('src/security/password.ts');
